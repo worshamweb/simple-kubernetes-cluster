@@ -23,10 +23,6 @@ override.tf.json
 .terraformrc
 terraform.rc
 
-# Dependency lock file - some teams include this, others don't
-# Uncomment if you want to ignore it
-# .terraform.lock.hcl
-
 # IDE directories
 .idea/
 .vscode/
