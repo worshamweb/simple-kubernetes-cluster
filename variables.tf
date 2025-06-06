@@ -33,11 +33,11 @@ variable "vpc_cidr" {
 variable "instance_type" {
   description = "EC2 instance type for the EKS node group"
   type        = string
-  default     = "t3a.small"
-  # t3a.small is cost-effective for prototype/learning (2 vCPU, 2GB RAM)
+  default     = "t3a.medium"
+  # t3a.medium is required for running ArgoCD (2 vCPU, 4GB RAM)
   # Uses AMD processors which are ~10% cheaper than Intel equivalents
+  # t3a.small (2GB RAM) is insufficient for running ArgoCD alongside other workloads
   # For production, consider:
-  # - t3a.medium or larger for general workloads (4GB RAM)
   # - c5a.large for compute-intensive workloads
   # - m5a.large for memory-intensive workloads
   # Note: t3a.micro is in free tier but too small for Kubernetes (only 1GB RAM)

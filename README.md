@@ -12,16 +12,16 @@ This Terraform project creates a minimal Kubernetes cluster on AWS using EKS (El
 
 ## Cost Considerations
 
-This prototype has been optimized for learning while minimizing costs:
+This prototype has been optimized for learning while providing enough resources to run ArgoCD:
 
-- **EKS Control Plane**: ~$0.10/hour ($73/month) - Not covered by free tier
-- **Worker Node**: t3a.small instance ~$0.019/hour ($13.87/month)
+- **EKS Control Plane**: ~$0.10/hour ($2.40/day, $73/month) - Not covered by free tier
+- **Worker Node**: t3a.medium instance ~$0.038/hour ($0.91/day, $27.74/month)
 - **VPC Components**: No direct cost
-- **Total Estimated Cost**: ~$0.12/hour or ~$2.88/day
+- **Total Estimated Cost**: ~$0.138/hour (~$3.31/day, ~$100.74/month)
 
 To minimize costs:
 - Destroy the cluster when not in use
-- The smallest viable instance type (t3a.small) is used for worker nodes
+- t3a.medium instance is used as the minimum size required to run ArgoCD
 - Single node configuration to reduce compute costs
 - Resource limits set on all deployments
 
@@ -30,6 +30,7 @@ To minimize costs:
 - Terraform >= 1.5.0
 - AWS CLI configured with appropriate credentials
 - kubectl for interacting with the cluster
+- Sufficient AWS permissions to create EKS clusters, VPCs, and IAM roles
 
 ### Installing kubectl on Ubuntu
 
@@ -53,6 +54,8 @@ Apply the configuration to create the EKS infrastructure:
 ```
 terraform apply
 ```
+
+This process will take approximately 10-15 minutes to complete as AWS provisions the EKS cluster and related resources.
 
 ### 2. Configure kubectl
 
@@ -98,6 +101,14 @@ The NGINX deployment is exposed via a ClusterIP service within the cluster. To a
    ```
    kubectl port-forward -n dev svc/nginx 8080:80
    ```
+   
+   To run this in the background, you can use:
+   ```
+   kubectl port-forward -n dev svc/nginx 8080:80 &
+   ```
+   (Use `fg` to bring it back to foreground or `kill %1` to terminate it)
+   
+   Alternatively, you can open a new terminal window for each port-forward to keep them separate.
 
 3. Open a browser and navigate to http://localhost:8080
 
@@ -107,17 +118,24 @@ ArgoCD is deployed with a ClusterIP service. To access the ArgoCD UI:
 
 1. Create a port-forward:
    ```
-   kubectl port-forward -n argocd svc/argocd-server 8080:443
+   kubectl port-forward -n argocd svc/argocd-server 8081:443
    ```
+   
+   To run this in the background, you can use:
+   ```
+   kubectl port-forward -n argocd svc/argocd-server 8081:443 &
+   ```
+   (Use `fg` to bring it back to foreground or `kill %1` to terminate it)
 
 2. Get the initial admin password:
    ```
    kubectl -n argocd get secret argocd-initial-admin-secret -o jsonpath="{.data.password}" | base64 -d
    ```
 
-3. Open a browser and navigate to https://localhost:8080
+3. Open a browser and navigate to https://localhost:8081
    - Username: admin
    - Password: (from the command above)
+   - Note: You will see a browser warning about the self-signed certificate. This is expected and you can safely proceed.
 
 ## Key Components Explained
 
@@ -177,6 +195,25 @@ Note that EKS has certain requirements that cannot be bypassed:
 
 ## Clean Up
 
+### Terminate Port-Forwarding Processes
+
+Before destroying the cluster, make sure to terminate any port-forwarding processes:
+
+1. If running in the foreground, press `Ctrl+C` in each terminal
+2. If running in the background, find and terminate them:
+   ```
+   # List background jobs
+   jobs
+   
+   # Kill specific job (e.g., job #1)
+   kill %1
+   
+   # Or kill all kubectl port-forward processes
+   pkill -f "kubectl port-forward"
+   ```
+
+### Destroy Infrastructure
+
 To destroy all resources and stop incurring costs:
 ```
 terraform destroy
@@ -210,3 +247,30 @@ terraform init -upgrade
 ```
 
 This is needed when you add or update providers in your configuration.
+
+### ArgoCD Deployment Timeout
+
+If you encounter a "context deadline exceeded" error during ArgoCD deployment:
+```
+Error: context deadline exceeded
+```
+
+This happens because the default Helm timeout (5 minutes) is insufficient for deploying ArgoCD. The configuration has been updated with a 15-minute timeout to address this issue.
+
+### Instance Size Requirements
+
+The project uses a t3a.medium instance (2 vCPU, 4GB RAM) as this is the minimum size required to run ArgoCD alongside other workloads. Using a smaller instance type like t3a.small (2GB RAM) will likely result in resource constraints and deployment failures for ArgoCD.
+
+### ArgoCD CRDs Warning During Destroy
+
+If you see this warning during `terraform destroy`:
+```
+Warning: Helm uninstall returned an information message
+
+These resources were kept due to the resource policy:
+[CustomResourceDefinition] applications.argoproj.io
+[CustomResourceDefinition] applicationsets.argoproj.io
+[CustomResourceDefinition] appprojects.argoproj.io
+```
+
+This is expected behavior. Helm doesn't delete CustomResourceDefinitions (CRDs) when uninstalling charts as they might be used by other applications. Since the entire EKS cluster is being destroyed, these CRDs will be removed automatically when the cluster is deleted. No manual cleanup is required.

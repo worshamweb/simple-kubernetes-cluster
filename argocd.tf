@@ -30,20 +30,27 @@ resource "helm_release" "argocd" {
   version    = "5.46.7"  # Specify a version for reproducibility
   namespace  = kubernetes_namespace.argocd.metadata[0].name
   
+  # Increase timeout to prevent "context deadline exceeded" error
+  # Even with t3a.medium, ArgoCD deployment can take time as it needs to pull images
+  # and start multiple components
+  timeout = 900 # 15 minutes in seconds
+  
   # Basic configuration values for ArgoCD
   set {
     name  = "server.service.type"
     value = "ClusterIP"  # Using ClusterIP for prototype simplicity
   }
   
+  # Set reasonable resource limits for t3a.medium instance (4GB RAM)
+  # These values provide enough resources for ArgoCD while leaving capacity for other workloads
   set {
     name  = "controller.resources.limits.cpu"
-    value = "500m"  # Limiting CPU usage for cost efficiency
+    value = "500m"
   }
   
   set {
     name  = "controller.resources.limits.memory"
-    value = "512Mi"  # Limiting memory usage for cost efficiency
+    value = "512Mi"
   }
   
   set {
@@ -54,6 +61,16 @@ resource "helm_release" "argocd" {
   set {
     name  = "server.resources.limits.memory"
     value = "512Mi"
+  }
+  
+  set {
+    name  = "repoServer.resources.limits.cpu"
+    value = "300m"
+  }
+  
+  set {
+    name  = "repoServer.resources.limits.memory"
+    value = "256Mi"
   }
   
   # Only deploy ArgoCD after the namespace is created
