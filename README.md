@@ -1,6 +1,18 @@
 # Simple Kubernetes Cluster on AWS EKS
 
-This Terraform project creates a minimal Kubernetes cluster on AWS using EKS (Elastic Kubernetes Service) for learning and prototyping purposes.
+This Terraform project creates a minimal Kubernetes cluster on AWS using EKS (Elastic Kubernetes Service).
+
+## Overview
+
+This project demonstrates:
+- Basic Terraform structure and AWS resource creation
+- EKS cluster configuration with managed node groups
+- Networking setup for Kubernetes on AWS
+- Using the Kubernetes provider in Terraform to deploy applications
+- Configuration management with ConfigMaps and Secrets
+- Package management with Helm
+- GitOps principles with ArgoCD
+- Infrastructure as Code best practices
 
 ## Architecture
 
@@ -10,9 +22,16 @@ This Terraform project creates a minimal Kubernetes cluster on AWS using EKS (El
 - ConfigMap and Secret for configuration management
 - ArgoCD deployment using Helm for GitOps capabilities
 
+## EKS Requirements
+
+Note that EKS has certain requirements that cannot be bypassed:
+- Subnets must be in at least two different Availability Zones
+- Control plane needs multi-AZ for high availability
+- Worker nodes can be in a single AZ to minimize costs
+
 ## Cost Considerations
 
-This prototype has been optimized for learning while providing enough resources to run ArgoCD:
+This prototype has been optimized for demonstration purposes while providing enough resources to run ArgoCD:
 
 - **EKS Control Plane**: ~$0.10/hour ($2.40/day, $73/month) - Not covered by free tier
 - **Worker Node**: t3a.medium instance ~$0.038/hour ($0.91/day, $27.74/month)
@@ -137,62 +156,6 @@ ArgoCD is deployed with a ClusterIP service. To access the ArgoCD UI:
    - Password: (from the command above)
    - Note: You will see a browser warning about the self-signed certificate. This is expected and you can safely proceed.
 
-## Key Components Explained
-
-### ConfigMaps and Secrets
-
-**ConfigMaps** are Kubernetes resources used to store non-confidential configuration data in key-value pairs. They allow you to:
-- Decouple configuration from container images
-- Store configuration files, command-line arguments, environment variables
-- Update configuration without rebuilding container images
-
-In this prototype, we use a ConfigMap to store NGINX configuration settings.
-
-**Secrets** are similar to ConfigMaps but are specifically designed for storing sensitive information like:
-- API keys
-- Passwords
-- TLS certificates
-- OAuth tokens
-
-In this prototype, we use a Secret to store a demo API key and database password. The Secret is mounted as environment variables in the NGINX container.
-
-### Helm and ArgoCD
-
-**Helm** is a package manager for Kubernetes that allows you to:
-- Define, install, and upgrade complex Kubernetes applications
-- Use pre-packaged "charts" (bundles of Kubernetes resources)
-- Manage releases and rollbacks
-- Parameterize deployments with values
-
-In this prototype, we use the Helm provider in Terraform to deploy ArgoCD from its official chart.
-
-**ArgoCD** is a GitOps continuous delivery tool for Kubernetes that:
-- Automates the deployment of applications from Git repositories
-- Ensures the deployed state matches the desired state in Git
-- Provides a web UI for visualizing application deployments
-- Supports multiple environments and promotion workflows
-
-In this prototype, ArgoCD is deployed as a basic installation that you can use to explore GitOps principles.
-
-## Learning Notes
-
-This project demonstrates:
-- Basic Terraform structure and AWS resource creation
-- EKS cluster configuration with managed node groups
-- Networking setup for Kubernetes on AWS
-- Using the Kubernetes provider in Terraform to deploy applications
-- Configuration management with ConfigMaps and Secrets
-- Package management with Helm
-- GitOps principles with ArgoCD
-- Infrastructure as Code best practices
-
-## EKS Requirements
-
-Note that EKS has certain requirements that cannot be bypassed:
-- Subnets must be in at least two different Availability Zones
-- Control plane needs multi-AZ for high availability
-- Worker nodes can be in a single AZ to minimize costs
-
 ## Clean Up
 
 ### Terminate Port-Forwarding Processes
@@ -231,6 +194,44 @@ The process takes approximately 10-15 minutes to complete.
 **Note**: If you've made changes to the configuration (like adding providers), you might need to run `terraform init -upgrade` before destroying to update the dependency lock file.
 
 **Important**: Remember to run `terraform destroy` when you're done with the prototype to avoid unnecessary charges.
+
+
+## Key Components Explained
+
+### ConfigMaps and Secrets
+
+**ConfigMaps** are Kubernetes resources used to store non-confidential configuration data in key-value pairs. They allow you to:
+- Decouple configuration from container images
+- Store configuration files, command-line arguments, environment variables
+- Update configuration without rebuilding container images
+
+In this prototype, we use a ConfigMap to store NGINX configuration settings.
+
+**Secrets** are similar to ConfigMaps but are specifically designed for storing sensitive information like:
+- API keys
+- Passwords
+- TLS certificates
+- OAuth tokens
+
+In this prototype, we use a Secret to store a demo API key and database password. The Secret is mounted as environment variables in the NGINX container.
+
+### Helm and ArgoCD
+
+**Helm** is a package manager for Kubernetes that allows you to:
+- Define, install, and upgrade complex Kubernetes applications
+- Use pre-packaged "charts" (bundles of Kubernetes resources)
+- Manage releases and rollbacks
+- Parameterize deployments with values
+
+In this prototype, we use the Helm provider in Terraform to deploy ArgoCD from its official chart.
+
+**ArgoCD** is a GitOps continuous delivery tool for Kubernetes that:
+- Automates the deployment of applications from Git repositories
+- Ensures the deployed state matches the desired state in Git
+- Provides a web UI for visualizing application deployments
+- Supports multiple environments and promotion workflows
+
+In this prototype, ArgoCD is deployed as a basic installation that you can use to explore GitOps principles.
 
 ## Troubleshooting
 
