@@ -60,7 +60,7 @@ sudo snap install kubectl --classic
 
 The `--classic` flag is required because kubectl needs additional system permissions.
 
-## Usage
+## Steps to Deploy
 
 ### 1. Deploy the EKS Cluster
 
@@ -275,3 +275,33 @@ These resources were kept due to the resource policy:
 ```
 
 This is expected behavior. Helm doesn't delete CustomResourceDefinitions (CRDs) when uninstalling charts as they might be used by other applications. Since the entire EKS cluster is being destroyed, these CRDs will be removed automatically when the cluster is deleted. No manual cleanup is required.
+
+## Lessons Learned
+
+This project revealed several important insights about running Kubernetes on AWS:
+
+### EKS Has Strict Infrastructure Requirements
+
+- **Multi-AZ Requirement**: EKS requires subnets in at least two different Availability Zones, even for minimal clusters. This is a hard requirement that cannot be bypassed.
+- **Public Subnets**: For simplicity, we used public subnets, but production environments should use private subnets with NAT gateways.
+- **Free Tier Limitations**: Due to these requirements, EKS cannot run in the AWS free tier, making it important to understand the cost implications.
+
+### Resource Requirements for Tools
+
+- **ArgoCD Resource Needs**: We discovered that ArgoCD requires more resources than initially anticipated. A t3a.small instance (2GB RAM) was insufficient, requiring an upgrade to t3a.medium (4GB RAM).
+- **Deployment Timeouts**: The default Helm timeout of 5 minutes was too short for ArgoCD deployment, requiring an extension to 15 minutes.
+- **Component Trade-offs**: For resource-constrained environments, we learned which components could be disabled (like Dex authentication) to reduce resource usage.
+
+### Terraform and Kubernetes Integration
+
+- **Two-Phase Deployment**: We found that separating infrastructure provisioning from application deployment (running `terraform apply` twice) created a more reliable process.
+- **Provider Dependencies**: The Kubernetes provider needs a functioning cluster before it can deploy resources, creating implicit dependencies in the Terraform code.
+- **Helm Integration**: Using the Helm provider in Terraform simplified chart deployment but required careful configuration of timeouts and resource limits.
+
+### Operational Considerations
+
+- **Port-Forwarding Management**: We learned the importance of properly managing port-forwarding processes, especially when running multiple services.
+- **Cleanup Procedures**: Proper cleanup procedures are essential to avoid orphaned resources and unnecessary costs.
+- **CRD Handling**: Helm's approach to preserving CRDs during uninstallation is a safety feature but can be confusing without proper documentation.
+
+These lessons highlight the balance between following cloud provider best practices and optimizing for cost and simplicity in learning environments.ed.
